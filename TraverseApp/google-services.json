@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "729262919472",
+    "project_id": "traverse-bus-app",
+    "storage_bucket": "traverse-bus-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729262919472:android:80fb1aaabfc518a52442f5",
+        "android_client_info": {
+          "package_name": "com.shehan.traverseapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_XAt0ftWO86YUU6hATqYkyEHX65jJ-5g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
