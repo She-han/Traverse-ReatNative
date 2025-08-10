@@ -17,6 +17,25 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { traccarService, BusLocation, RouteData } from '../../services/traccarService';
 
+// Import map components
+let WebMapView: any = null;
+let UniversalMapView: any = null;
+
+if (Platform.OS === 'web') {
+  try {
+    WebMapView = require('../../components/Map/WebMapView').default;
+  } catch (error) {
+    console.log('WebMapView not available:', error);
+  }
+}
+
+// Universal map that works on both platforms
+try {
+  UniversalMapView = require('../../components/Map/UniversalMapView').default;
+} catch (error) {
+  console.log('UniversalMapView not available:', error);
+}
+
 const { width, height } = Dimensions.get('window');
 
 // Conditionally import MapView for mobile platforms
@@ -421,7 +440,19 @@ const MapScreen: React.FC = () => {
 
       {/* Map/Bus List Container */}
       <View style={styles.mapContainer}>
-        {ExpoMap && Platform.OS !== 'web' ? (
+        {UniversalMapView ? (
+          <UniversalMapView
+            buses={buses}
+            selectedBus={selectedBus}
+            onBusSelect={setSelectedBus}
+          />
+        ) : Platform.OS === 'web' && WebMapView ? (
+          <WebMapView
+            buses={buses}
+            selectedBus={selectedBus}
+            onBusSelect={setSelectedBus}
+          />
+        ) : ExpoMap && Platform.OS !== 'web' ? (
           <ExpoMap
             ref={mapRef}
             style={styles.map}

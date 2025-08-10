@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthService } from './services/authService';
+
+// Import Leaflet CSS for web platforms
+if (Platform.OS === 'web') {
+  require('leaflet/dist/leaflet.css');
+}
 
 // Import Auth Screens
 import WelcomeScreen from './screens/Auth/WelcomeScreen';
