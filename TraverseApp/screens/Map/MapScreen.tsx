@@ -267,20 +267,13 @@ const MapScreen: React.FC = () => {
       style={styles.searchResultItem}
       onPress={() => handleRouteSelect(item)}
     >
-      <View style={styles.searchResultHeader}>
-        <View style={[styles.routeBadge, { backgroundColor: '#2ECC71' }]}>
-          <Text style={styles.routeBadgeText}>{item.number}</Text>
-        </View>
-        <View style={styles.searchResultText}>
-          <Text style={styles.searchResultName}>{item.name}</Text>
-          <Text style={styles.searchResultRoute}>
-            {item.startLocation} → {item.endLocation}
-          </Text>
-          <Text style={styles.searchResultStats}>
-            {item.activeBuses}/{item.totalBuses} buses active
-          </Text>
-        </View>
+      <View style={styles.resultItemLeft}>
+        <Text style={styles.resultRouteNumber}>Route {item.number}</Text>
+        <Text style={styles.resultDestination}>
+          {item.startLocation} → {item.endLocation}
+        </Text>
       </View>
+      <Ionicons name="chevron-forward" size={20} color="#cbd5e1" style={styles.resultArrow} />
     </TouchableOpacity>
   );
 
@@ -314,10 +307,7 @@ const MapScreen: React.FC = () => {
                 <Text style={styles.busInfoValue}>{selectedBus.busNumber}</Text>
               </View>
 
-              <View style={styles.busInfoRow}>
-                <Text style={styles.busInfoLabel}>Plate Number:</Text>
-                <Text style={styles.busInfoValue}>{selectedBus.busInfo.plateNumber}</Text>
-              </View>
+             
               
               <View style={styles.busInfoRow}>
                 <Text style={styles.busInfoLabel}>Status:</Text>
@@ -388,57 +378,43 @@ const MapScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Connection Status */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Live Bus Tracking</Text>
-          <View style={styles.connectionStatus}>
-            <View style={[styles.statusDot, { backgroundColor: getConnectionStatusColor() }]} />
-            <Text style={styles.statusText}>{connectionStatus}</Text>
-          </View>
-        </View>
-        <TouchableOpacity onPress={onRefresh} disabled={refreshing}>
-          <Ionicons 
-            name={refreshing ? "refresh" : "refresh-outline"} 
-            size={24} 
-            color="#666" 
-          />
-        </TouchableOpacity>
-      </View>
+      {/* Modern Header */}
+     
 
-      {/* Search Header */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+      {/* Modern Search Container */}
+      <View style={styles.modernSearchContainer}>
+        <View style={styles.modernSearchInputContainer}>
+          <Ionicons name="search" size={20} color="#6366f1" style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
-            placeholder="Search route number or destination..."
+            style={styles.modernSearchInput}
+            placeholder="Search routes, destinations..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
+            placeholderTextColor="#94a3b8"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={20} color="#666" />
+            <TouchableOpacity onPress={clearSearch} style={styles.modernClearButton}>
+              <Ionicons name="close-circle" size={20} color="#94a3b8" />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Search Results */}
+      {/* Modern Search Results */}
       {showSearchResults && (
-        <View style={styles.searchResults}>
+        <View style={styles.modernSearchResults}>
           <FlatList
             data={filteredRoutes}
             renderItem={renderSearchResult}
             keyExtractor={(item) => item.id}
             style={styles.searchResultsList}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           />
         </View>
       )}
 
-      {/* Map/Bus List Container */}
+      {/* Map Container */}
       <View style={styles.mapContainer}>
         {UniversalMapView ? (
           <UniversalMapView
@@ -575,19 +551,103 @@ const MapScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8fafc',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8fafc',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: '#64748b',
   },
+  
+  // Modern Header Styles
+  modernHeader: {
+    backgroundColor: '#6366f1',
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modernHeaderTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  refreshButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  
+  // Modern Search Styles
+  modernSearchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#f8fafc',
+  },
+  modernSearchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    shadowColor: '#64748b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  modernSearchInput: {
+    flex: 1,
+    height: 48,
+    fontSize: 16,
+    color: '#1e293b',
+    fontWeight: '500',
+  },
+  modernClearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  
+  // Modern Search Results
+  modernSearchResults: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: -10,
+    borderRadius: 16,
+    maxHeight: 200,
+    shadowColor: '#64748b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  
   webFallback: {
     flex: 1,
     justifyContent: 'center',
@@ -719,9 +779,30 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   searchResultItem: {
-    padding: 12,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  resultItemLeft: {
+    flex: 1,
+  },
+  resultRouteNumber: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
     marginBottom: 4,
+  },
+  resultDestination: {
+    fontSize: 14,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  resultArrow: {
+    marginLeft: 12,
+    opacity: 0.7,
   },
   searchResultHeader: {
     flexDirection: 'row',
@@ -893,12 +974,13 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    marginRight: 8,
   },
   statusText: {
     fontSize: 12,
-    color: '#666',
-    textTransform: 'capitalize',
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.9)',
+    letterSpacing: 0.8,
   },
   mapContainer: {
     flex: 1,
@@ -977,25 +1059,33 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
     backgroundColor: '#fff',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+    marginHorizontal: 20,
+    marginVertical: 16,
+    borderRadius: 20,
+    shadowColor: '#64748b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   statItem: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
   },
   statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2ECC71',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#6366f1',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#64748b',
+    fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

@@ -6,6 +6,7 @@ import {
   ScrollView, 
   TouchableOpacity, 
   SafeAreaView,
+  Image,
   Alert,
   Switch,
   Modal,
@@ -25,9 +26,8 @@ interface UserStats {
 }
 
 const ProfileScreen: React.FC = () => {
-  // Get real user data from Redux store
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth);
   const [userStats, setUserStats] = useState<UserStats>({
     totalTrips: 0,
     favoriteRoutes: 0,
@@ -50,15 +50,10 @@ const ProfileScreen: React.FC = () => {
   }, []);
 
   const loadUserData = async () => {
+    if (!user?.id) return;
+    
     try {
       setLoading(true);
-      
-      if (!user?.id) {
-        // No user logged in, stop loading
-        setLoading(false);
-        return;
-      }
-      
       const userData = await routeService.getUserRouteData(user.id);
       if (userData) {
         setUserStats({
@@ -93,20 +88,14 @@ const ProfileScreen: React.FC = () => {
         { 
           text: 'Logout', 
           style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(logoutUser()).unwrap();
-              // Navigation will be handled by the App.tsx based on auth state
-            } catch (error) {
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          }
+          onPress: () => dispatch(logoutUser())
         }
       ]
     );
   };
 
   const handleSaveProfile = () => {
+    // Here you would typically update the user profile in Firebase
     setEditModalVisible(false);
     Alert.alert('Success', 'Profile updated successfully!');
   };
@@ -258,30 +247,6 @@ const ProfileScreen: React.FC = () => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366f1" />
           <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Show login required message if no user is authenticated
-  if (!user || !isAuthenticated) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Ionicons name="person-outline" size={64} color="#d1d5db" />
-          <Text style={styles.emptyStateTitle}>Not Logged In</Text>
-          <Text style={styles.emptyStateSubtitle}>
-            Please log in to view your profile
-          </Text>
-          <TouchableOpacity 
-            style={styles.loginButton}
-            onPress={() => {
-              // Navigation to login screen will be handled by App.tsx based on auth state
-              console.log('Navigate to login');
-            }}
-          >
-            <Text style={styles.loginButtonText}>Go to Login</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -698,31 +663,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalSaveText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#9ca3af',
-    marginTop: 16,
-  },
-  emptyStateSubtitle: {
-    fontSize: 14,
-    color: '#d1d5db',
-    marginTop: 8,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  loginButton: {
-    backgroundColor: '#6366f1',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  loginButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',

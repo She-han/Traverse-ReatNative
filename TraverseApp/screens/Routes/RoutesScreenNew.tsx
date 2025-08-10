@@ -12,14 +12,11 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants';
-import { routeService, Route } from '../../services/routeService';
 import { useAppSelector } from '../../store';
-import { initializeSampleRoutes } from '../../utils/initializeRoutes';
+import { routeService, Route } from '../../services/routeService';
 
 const RoutesScreen: React.FC = () => {
-  // Get real user data from Redux store
-  const { user } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector(state => state.auth);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<Route[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,17 +38,7 @@ const RoutesScreen: React.FC = () => {
   const loadRoutes = async () => {
     try {
       setLoading(true);
-      let routesData = await routeService.getAllRoutes();
-      
-      // If no routes exist, initialize with sample data
-      if (routesData.length === 0) {
-        console.log('No routes found, initializing sample routes...');
-        const initialized = await initializeSampleRoutes();
-        if (initialized) {
-          routesData = await routeService.getAllRoutes();
-        }
-      }
-      
+      const routesData = await routeService.getAllRoutes();
       setRoutes(routesData);
     } catch (error) {
       console.error('Error loading routes:', error);
@@ -255,7 +242,10 @@ const RoutesScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Modern Header */}
-     
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>🚌 Routes</Text>
+        <Text style={styles.headerSubtitle}>Find your perfect route</Text>
+      </View>
 
       {/* Search Section */}
       <View style={styles.searchSection}>

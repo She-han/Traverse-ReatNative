@@ -127,7 +127,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
                     <div style="min-width: 200px;">
                         <h3 style="margin: 0 0 10px 0; color: #1976d2;">🚌 \${bus.plate}</h3>
                         <div style="font-size: 14px; line-height: 1.5;">
-                            <div><strong>Route:</strong> \${bus.route}</div>
+                            <div><strong>Route Number:</strong> \${bus.route}</div>
                             <div><strong>Speed:</strong> \${bus.speed.toFixed(1)} km/h</div>
                             <div><strong>Status:</strong> <span style="color: \${getStatusColor(bus.status)}; font-weight: bold;">\${bus.status.toUpperCase()}</span></div>
                             <div><strong>Driver:</strong> \${bus.driver}</div>
