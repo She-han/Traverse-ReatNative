@@ -93,21 +93,20 @@ class TraccarService {
   private demoMode = false;
 
   constructor() {
-    // Dynamic Traccar server configuration
+    // Updated Traccar server configuration
     const isWeb = typeof window !== 'undefined' && window.location;
     
+    // Use the new remote Traccar server for both web and mobile
+    this.traccarUrl = 'http://157.245.48.195:8082';
+    
     if (isWeb) {
-      // For web development - use localhost
-      this.traccarUrl = 'http://localhost:8082';
-      console.log('🌐 Web mode: Using localhost:8082 for Traccar');
+      console.log('🌐 Web mode: Using remote Traccar server');
     } else {
-      // For mobile devices, use your computer's IP address
-      this.traccarUrl = 'http://192.168.43.14:8082'; // Update this to your PC's IP
-      console.log('📱 Mobile mode: Using network IP for Traccar');
+      console.log('📱 Mobile mode: Using remote Traccar server');
     }
     
     this.username = 'shehangarusinghe@gmail.com'; // Default Traccar username
-    this.password = 'shehan1021'; // Default Traccar password
+    this.password = 'gaasi1021'; // Default Traccar password
     this.db = getFirestore();
     
     console.log(`🔗 Traccar URL configured: ${this.traccarUrl}`);
