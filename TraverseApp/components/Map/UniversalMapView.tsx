@@ -7,9 +7,10 @@ interface UniversalMapViewProps {
   buses: BusLocation[];
   selectedBus?: BusLocation | null;
   onBusSelect?: (bus: BusLocation) => void;
+  userLocation?: { latitude: number; longitude: number } | null;
 }
 
-const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus, onBusSelect }) => {
+const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus, onBusSelect, userLocation }) => {
   // Create HTML content for the map
   const generateMapHTML = () => {
     const busesJson = JSON.stringify(buses.map(bus => ({
@@ -23,6 +24,11 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
       driver: bus.driver?.name || 'Unknown',
       lastUpdate: bus.lastUpdate.toLocaleTimeString()
     })));
+
+    const userLocationJson = userLocation ? JSON.stringify({
+      lat: userLocation.latitude,
+      lng: userLocation.longitude
+    }) : 'null';
 
     return `
 <!DOCTYPE html>
@@ -109,6 +115,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
 
         // Bus data
         const buses = ${busesJson};
+        const userLocation = ${userLocationJson};
         
         // Add bus markers
         const markers = [];
@@ -143,10 +150,40 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
             markers.push(marker);
         });
         
-        // Fit map to show all buses
-        if (buses.length > 0) {
+        // Add user location marker if available
+        if (userLocation) {
+            const userIcon = L.divIcon({
+                html: '<div style="width: 20px; height: 20px; border-radius: 50%; background-color: #6366f1; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: white;">📍</div>',
+                className: 'user-location-icon',
+                iconSize: [26, 26],
+                iconAnchor: [13, 13]
+            });
+            
+            const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
+                .bindPopup(\`
+                    <div style="min-width: 150px;">
+                        <h3 style="margin: 0 0 10px 0; color: #6366f1;">📍 Your Location</h3>
+                        <div style="font-size: 14px; line-height: 1.5;">
+                            <div><strong>Latitude:</strong> \${userLocation.lat.toFixed(6)}</div>
+                            <div><strong>Longitude:</strong> \${userLocation.lng.toFixed(6)}</div>
+                        </div>
+                    </div>
+                \`)
+                .addTo(map);
+            
+            markers.push(userMarker);
+            
+            // Center map on user location if available
+            map.setView([userLocation.lat, userLocation.lng], 14);
+        }
+        
+        // Fit map to show all markers (buses + user location)
+        if (markers.length > 0) {
             const group = new L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.1));
+            const bounds = group.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds.pad(0.1));
+            }
         }
         
         function getStatusColor(status) {

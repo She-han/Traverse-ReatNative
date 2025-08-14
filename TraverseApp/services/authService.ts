@@ -8,10 +8,19 @@ import {
   updateProfile,
   getIdToken
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from './firebase';
 import { User, UserPreferences } from '../types';
+
+// Helper function to convert Firebase timestamps to Date objects
+const convertFirestoreTimestamps = (userData: any): User => {
+  return {
+    ...userData,
+    createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt),
+    lastLoginAt: userData.lastLoginAt?.toDate ? userData.lastLoginAt.toDate() : new Date(userData.lastLoginAt),
+  };
+};
 
 export class AuthService {
   // Sign up with email and password
@@ -66,7 +75,7 @@ export class AuthService {
       let userData: User;
 
       if (userDoc.exists()) {
-        userData = userDoc.data() as User;
+        userData = convertFirestoreTimestamps(userDoc.data());
         // Update last login
         await updateDoc(doc(db, 'users', firebaseUser.uid), {
           lastLoginAt: new Date()
@@ -140,7 +149,7 @@ export class AuthService {
         throw new Error('User data not found');
       }
 
-      const userData = userDoc.data() as User;
+      const userData = convertFirestoreTimestamps(userDoc.data());
       
       // Store token locally
       await AsyncStorage.setItem('userToken', token);
@@ -174,7 +183,7 @@ export class AuthService {
   static async getUserData(uid: string): Promise<User | null> {
     try {
       const userDoc = await getDoc(doc(db, 'users', uid));
-      return userDoc.exists() ? userDoc.data() as User : null;
+      return userDoc.exists() ? convertFirestoreTimestamps(userDoc.data()) : null;
     } catch (error) {
       return null;
     }

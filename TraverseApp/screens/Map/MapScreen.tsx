@@ -15,25 +15,28 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { traccarService, BusLocation, RouteData } from '../../services/traccarService';
 
 // Import map components
 let WebMapView: any = null;
-let UniversalMapView: any = null;
 
 if (Platform.OS === 'web') {
   try {
     WebMapView = require('../../components/Map/WebMapView').default;
+    console.log('✅ WebMapView loaded successfully');
   } catch (error) {
-    console.log('WebMapView not available:', error);
+    console.log('❌ WebMapView not available:', error);
   }
 }
 
 // Universal map that works on both platforms
+let UniversalMapView: any = null;
 try {
   UniversalMapView = require('../../components/Map/UniversalMapView').default;
+  console.log('✅ UniversalMapView loaded successfully');
 } catch (error) {
-  console.log('UniversalMapView not available:', error);
+  console.log('❌ UniversalMapView not available:', error);
 }
 
 const { width, height } = Dimensions.get('window');
@@ -49,8 +52,9 @@ if (Platform.OS !== 'web') {
     ExpoMap = ExpoMaps.MapView;
     Marker = ExpoMaps.Marker;
     Polyline = ExpoMaps.Polyline;
+    console.log('✅ Expo Maps loaded successfully');
   } catch (error) {
-    console.log('Expo Maps not available, using fallback');
+    console.log('❌ Expo Maps not available, using fallback:', error);
   }
 }
 
@@ -75,11 +79,19 @@ const MapScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'demo' | 'error'>('connecting');
   const [refreshing, setRefreshing] = useState(false);
+  
+  // User location states
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [locationPermission, setLocationPermission] = useState<boolean>(false);
+  const [locationLoading, setLocationLoading] = useState<boolean>(false);
+  
   const mapRef = useRef<any>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    console.log('🚀 MapScreen useEffect running - initializing...');
     initializeTraccar();
+    requestLocationPermission();
     
     return () => {
       // Cleanup
@@ -89,6 +101,12 @@ const MapScreen: React.FC = () => {
       traccarService.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    console.log('🗺️ Map rendering effect - UniversalMapView:', !!UniversalMapView, 'ExpoMap:', !!ExpoMap, 'Platform:', Platform.OS);
+    console.log('📍 Current userLocation:', userLocation);
+    console.log('🚌 Current buses count:', buses.length);
+  });
 
   useEffect(() => {
     if (searchQuery.length > 0) {
@@ -230,6 +248,167 @@ const MapScreen: React.FC = () => {
     setRefreshing(true);
     await traccarService.syncToFirebase();
     setRefreshing(false);
+  };
+
+  // Location permission and user location functions
+  const requestLocationPermission = async () => {
+    try {
+      console.log('📋 Requesting location permission...');
+      
+      if (Platform.OS === 'web') {
+        console.log('🌐 Web platform detected - using browser geolocation API');
+        await getWebLocation();
+        return;
+      }
+      
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('📋 Location permission status:', status);
+      
+      if (status === 'granted') {
+        console.log('✅ Location permission granted');
+        setLocationPermission(true);
+        await getCurrentLocation();
+      } else {
+        console.log('❌ Location permission denied, status:', status);
+        setLocationPermission(false);
+        Alert.alert(
+          'Location Permission Required',
+          'This app needs location access to show your position on the map and help you find nearby buses. Please enable location access in your device settings.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error requesting location permission:', error);
+      setLocationPermission(false);
+    }
+  };
+
+  const getWebLocation = async () => {
+    try {
+      console.log('🌐 Requesting web geolocation...');
+      setLocationLoading(true);
+      
+      if (!navigator.geolocation) {
+        console.log('❌ Geolocation not supported by this browser');
+        Alert.alert('Location Error', 'Geolocation is not supported by this browser.');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userCoords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          
+          setUserLocation(userCoords);
+          setLocationPermission(true);
+          console.log('✅ Web location obtained:', userCoords);
+          
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.error('❌ Web geolocation error:', error);
+          setLocationLoading(false);
+          setLocationPermission(false);
+          
+          let errorMessage = 'Could not get your location. ';
+          switch (error.code) {
+            case 1:
+              errorMessage += 'Location access denied by user.';
+              break;
+            case 2:
+              errorMessage += 'Location information unavailable.';
+              break;
+            case 3:
+              errorMessage += 'Location request timed out.';
+              break;
+            default:
+              errorMessage += 'Unknown error occurred.';
+              break;
+          }
+          
+          Alert.alert('Location Error', errorMessage);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    } catch (error) {
+      console.error('❌ Error in web geolocation:', error);
+      setLocationLoading(false);
+      setLocationPermission(false);
+    }
+  };
+
+  const getCurrentLocation = async () => {
+    try {
+      setLocationLoading(true);
+      console.log('🔍 Getting current location...');
+      
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      
+      const userCoords = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+      
+      setUserLocation(userCoords);
+      console.log('📍 User location obtained:', userCoords);
+      
+      // Center map on user location if mapRef is available
+      if (mapRef.current) {
+        console.log('🎯 Centering map on user location');
+        mapRef.current.animateToRegion({
+          latitude: userCoords.latitude,
+          longitude: userCoords.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        }, 1500);
+      } else {
+        console.log('⚠️ Map reference not available for centering');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error getting current location:', error);
+      Alert.alert(
+        'Location Error',
+        'Could not get your current location. Please check your GPS settings and try again.',
+        [
+          { text: 'Retry', onPress: getCurrentLocation },
+          { text: 'Cancel' }
+        ]
+      );
+    } finally {
+      setLocationLoading(false);
+      console.log('📍 Location loading finished');
+    }
+  };
+
+  const centerOnUserLocation = () => {
+    console.log('🎯 centerOnUserLocation called');
+    
+    if (!userLocation) {
+      console.log('🔄 No user location available, requesting...');
+      getCurrentLocation();
+      return;
+    }
+
+    if (mapRef.current) {
+      console.log('🗺️ Centering map on user location:', userLocation);
+      mapRef.current.animateToRegion({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 1000);
+    } else {
+      console.log('⚠️ Map reference not available');
+    }
   };
 
   const getBusStatusColor = (status: string) => {
@@ -416,49 +595,125 @@ const MapScreen: React.FC = () => {
 
       {/* Map Container */}
       <View style={styles.mapContainer}>
-        {UniversalMapView ? (
-          <UniversalMapView
-            buses={buses}
-            selectedBus={selectedBus}
-            onBusSelect={setSelectedBus}
-          />
-        ) : Platform.OS === 'web' && WebMapView ? (
-          <WebMapView
-            buses={buses}
-            selectedBus={selectedBus}
-            onBusSelect={setSelectedBus}
-          />
+        {Platform.OS === 'web' && WebMapView ? (
+          <View style={styles.mapContainer}>
+            <WebMapView
+              buses={buses}
+              selectedBus={selectedBus}
+              onBusSelect={setSelectedBus}
+              userLocation={userLocation}
+            />
+            
+            {/* Web Location Button */}
+            <TouchableOpacity
+              style={styles.myLocationButton}
+              onPress={() => {
+                if (Platform.OS === 'web') {
+                  getWebLocation();
+                } else {
+                  centerOnUserLocation();
+                }
+              }}
+              disabled={locationLoading}
+            >
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons 
+                  name={userLocation ? "location" : "location-outline"} 
+                  size={24} 
+                  color="#ffffff" 
+                />
+              )}
+            </TouchableOpacity>
+          </View>
         ) : ExpoMap && Platform.OS !== 'web' ? (
-          <ExpoMap
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={{
-              latitude: 6.9271,
-              longitude: 79.8612,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-            showsUserLocation={true}
-            showsMyLocationButton={false}
-          >
-            {/* Bus Markers */}
-            {buses.map((bus) => (
-              <Marker
-                key={bus.id}
-                coordinate={{
-                  latitude: bus.latitude,
-                  longitude: bus.longitude,
-                }}
-                onPress={() => setSelectedBus(bus)}
-              >
-                <View style={[styles.busMarker, 
-                  { backgroundColor: getBusStatusColor(bus.status) }
-                ]}>
-                  <Text style={styles.busMarkerText}>{bus.routeNumber}</Text>
-                </View>
-              </Marker>
-            ))}
-          </ExpoMap>
+          <View style={styles.mapContainer}>
+            <ExpoMap
+              ref={mapRef}
+              style={styles.map}
+              initialRegion={{
+                latitude: userLocation?.latitude || 6.9271,
+                longitude: userLocation?.longitude || 79.8612,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+              showsUserLocation={false}
+              showsMyLocationButton={false}
+            >
+              {/* Bus Markers */}
+              {buses.map((bus) => (
+                <Marker
+                  key={bus.id}
+                  coordinate={{
+                    latitude: bus.latitude,
+                    longitude: bus.longitude,
+                  }}
+                  onPress={() => setSelectedBus(bus)}
+                >
+                  <View style={[styles.busMarker, 
+                    { backgroundColor: getBusStatusColor(bus.status) }
+                  ]}>
+                    <Text style={styles.busMarkerText}>{bus.routeNumber}</Text>
+                  </View>
+                </Marker>
+              ))}
+              
+              {/* User Location Marker */}
+              {userLocation && (
+                <Marker
+                  coordinate={userLocation}
+                  title="Your Location"
+                  description={`Lat: ${userLocation.latitude.toFixed(6)}, Lng: ${userLocation.longitude.toFixed(6)}`}
+                >
+                  <Ionicons name="radio-button-on" size={30} color="#6366f1" />
+                </Marker>
+              )}
+            </ExpoMap>
+            
+            {/* My Location Button */}
+            <TouchableOpacity
+              style={styles.myLocationButton}
+              onPress={centerOnUserLocation}
+              disabled={locationLoading}
+            >
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons 
+                  name={userLocation ? "location" : "location-outline"} 
+                  size={24} 
+                  color="#ffffff" 
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : UniversalMapView ? (
+          <View style={styles.mapContainer}>
+            <UniversalMapView
+              buses={buses}
+              selectedBus={selectedBus}
+              onBusSelect={setSelectedBus}
+              userLocation={userLocation}
+            />
+            
+            {/* Mobile Location Button for UniversalMapView */}
+            <TouchableOpacity
+              style={styles.myLocationButton}
+              onPress={centerOnUserLocation}
+              disabled={locationLoading}
+            >
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons 
+                  name={userLocation ? "location" : "location-outline"} 
+                  size={24} 
+                  color="#ffffff" 
+                />
+              )}
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.busListContainer}>
             <FlatList
@@ -1088,6 +1343,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  
+  // Location button style
+  myLocationButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#6366f1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
 

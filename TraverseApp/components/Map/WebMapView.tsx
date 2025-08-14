@@ -41,17 +41,46 @@ const createBusIcon = (status: string) => {
   });
 };
 
+// Custom user location icon
+const createUserLocationIcon = () => {
+  return L.divIcon({
+    html: `
+      <div style="
+        background-color: #6366f1;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: white;
+        font-weight: bold;
+      ">📍</div>
+    `,
+    className: 'user-location-marker',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+};
+
 // Component to update map center when buses change
-const MapUpdater: React.FC<{ buses: BusLocation[] }> = ({ buses }) => {
+const MapUpdater: React.FC<{ buses: BusLocation[]; userLocation?: { latitude: number; longitude: number } | null }> = ({ buses, userLocation }) => {
   const map = useMap();
   
   useEffect(() => {
-    if (buses.length > 0) {
+    if (userLocation) {
+      // Center on user location if available
+      map.setView([userLocation.latitude, userLocation.longitude], 14);
+      console.log('🗺️ WebMap centered on user location:', userLocation);
+    } else if (buses.length > 0) {
       // Calculate bounds to fit all buses
       const bounds = L.latLngBounds(buses.map(bus => [bus.latitude, bus.longitude]));
       map.fitBounds(bounds, { padding: [20, 20] });
     }
-  }, [buses, map]);
+  }, [buses, userLocation, map]);
   
   return null;
 };
@@ -60,9 +89,10 @@ interface WebMapViewProps {
   buses: BusLocation[];
   selectedBus?: BusLocation | null;
   onBusSelect?: (bus: BusLocation) => void;
+  userLocation?: { latitude: number; longitude: number } | null;
 }
 
-const WebMapView: React.FC<WebMapViewProps> = ({ buses, selectedBus, onBusSelect }) => {
+const WebMapView: React.FC<WebMapViewProps> = ({ buses, selectedBus, onBusSelect, userLocation }) => {
   const mapRef = useRef<L.Map | null>(null);
   
   // Default center (Colombo, Sri Lanka)
@@ -86,7 +116,27 @@ const WebMapView: React.FC<WebMapViewProps> = ({ buses, selectedBus, onBusSelect
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        <MapUpdater buses={buses} />
+        <MapUpdater buses={buses} userLocation={userLocation} />
+        
+        {/* User Location Marker */}
+        {userLocation && (
+          <Marker
+            position={[userLocation.latitude, userLocation.longitude]}
+            icon={createUserLocationIcon()}
+          >
+            <Popup>
+              <div style={{ minWidth: '150px' }}>
+                <h3 style={{ margin: '0 0 10px 0', color: '#6366f1' }}>
+                  📍 Your Location
+                </h3>
+                <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                  <div><strong>Latitude:</strong> {userLocation.latitude.toFixed(6)}</div>
+                  <div><strong>Longitude:</strong> {userLocation.longitude.toFixed(6)}</div>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
         
         {buses.map((bus) => (
           <Marker
