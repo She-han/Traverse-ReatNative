@@ -2,14 +2,15 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
 import { RootState } from './types';
 import { AuthService } from './services/authService';
-import { setUser, clearAuth } from './store/slices/authSlice';
+import { setUser, clearAuth, setAuthLoading } from './store/slices/authSlice';
 import { setupDevData } from './utils/initializeData';
+import { ToastProvider } from './contexts/ToastContext';
 
 // Import Leaflet CSS for web platforms
 if (Platform.OS === 'web') {
@@ -21,7 +22,7 @@ import WelcomeScreen from './screens/Auth/WelcomeScreen';
 import LoginScreen from './screens/Auth/LoginScreenNew';
 import RegisterScreen from './screens/Auth/RegisterScreen';
 import MapScreen from './screens/Map/MapScreen';
-import RoutesScreen from './screens/Routes/RoutesScreen';
+import SriLankanRoutesScreen from './screens/Routes/SriLankanRoutesScreen';
 import ProfileScreen from './screens/Profile/ProfileScreen';
 
 const Stack = createStackNavigator();
@@ -65,7 +66,7 @@ function MainTabNavigator() {
       />
       <Tab.Screen 
         name="Routes" 
-        component={RoutesScreen}
+        component={SriLankanRoutesScreen}
         options={{ title: 'Bus Routes' }}
       />
       <Tab.Screen 
@@ -83,37 +84,80 @@ function AppNavigation() {
   const { isAuthenticated, user, isLoading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    // Initialize sample data for development
-    setupDevData();
-    
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Initialize sample data for development
+        setupDevData();
+        
+        // Check if user is already authenticated
+        const authData = await AuthService.checkAuthState();
+        if (isMounted) {
+          if (authData) {
+            console.log('User already authenticated:', authData.user.email);
+            dispatch(setUser(authData.user));
+          } else {
+            console.log('No authenticated user found');
+            dispatch(setAuthLoading(false));
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (isMounted) {
+          dispatch(setAuthLoading(false));
+        }
+      }
+    };
+
+    // Initialize auth state
+    initializeAuth();
+
     // Listen for auth state changes
     const unsubscribe = AuthService.onAuthStateChanged(async (firebaseUser) => {
+      if (!isMounted) return;
+
       if (firebaseUser) {
         // User is signed in, get their data and update Redux
         try {
           const userData = await AuthService.getUserData(firebaseUser.uid);
-          if (userData) {
+          if (userData && isMounted) {
+            console.log('Auth state changed - user signed in:', userData.email);
             dispatch(setUser(userData));
           }
         } catch (error) {
           console.error('Error getting user data:', error);
-          dispatch(clearAuth());
+          if (isMounted) {
+            dispatch(clearAuth());
+          }
         }
       } else {
         // User is signed out
-        dispatch(clearAuth());
+        console.log('Auth state changed - user signed out');
+        if (isMounted) {
+          dispatch(clearAuth());
+        }
       }
     });
 
-    return unsubscribe;
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [dispatch]);
 
   if (isLoading) {
-    // Loading screen
+    // Show loading screen while checking authentication state
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="bus" size={60} color="#2ECC71" />
-        <Text style={styles.loadingText}>Traverse</Text>
+        <View style={styles.logoContainer}>
+          <Ionicons name="bus" size={60} color="#2ECC71" />
+          <Text style={styles.appName}>Traverse</Text>
+        </View>
+        <View style={styles.loadingContent}>
+          <Text style={styles.loadingText}>Checking authentication...</Text>
+          <ActivityIndicator size="large" color="#2ECC71" />
+        </View>
       </View>
     );
   }
@@ -144,11 +188,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
   },
-  loadingText: {
-    fontSize: 18,
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  appName: {
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#28283E',
-    marginTop: 20,
+    marginTop: 16,
+  },
+  loadingContent: {
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#64748b',
+    marginBottom: 24,
   },
 });
 
@@ -156,7 +213,9 @@ const styles = StyleSheet.create({
 export default function AppWithProvider() {
   return (
     <Provider store={store}>
-      <AppNavigation />
+      <ToastProvider>
+        <AppNavigation />
+      </ToastProvider>
     </Provider>
   );
 }

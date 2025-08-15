@@ -8,7 +8,7 @@ import { setUser } from '../store/slices/authSlice';
 import { AuthService } from '../services/authService';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import MapScreen from '../screens/Map/MapScreen';
-import RoutesScreen from '../screens/Routes/RoutesScreen';
+import SriLankanRoutesScreen from '../screens/Routes/SriLankanRoutesScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 import { COLORS } from '../constants';
@@ -43,7 +43,7 @@ const MainNavigator: React.FC = () => {
       })}
     >
       <Tab.Screen name="Map" component={MapScreen} />
-      <Tab.Screen name="Routes" component={RoutesScreen} />
+      <Tab.Screen name="Routes" component={SriLankanRoutesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

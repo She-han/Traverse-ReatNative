@@ -18,7 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase (prevent multiple initializations)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firebase services
+// Initialize Firebase Auth
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 // Note: Use expo-notifications for push notifications instead of Firebase messaging

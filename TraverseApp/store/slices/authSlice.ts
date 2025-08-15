@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User } from '../../types';
 import { authService } from '../../services/authService';
+import { ErrorHandler, UserFriendlyError } from '../../utils/errorHandler';
 
 // Async thunks
 export const loginUser = createAsyncThunk(
@@ -10,7 +11,8 @@ export const loginUser = createAsyncThunk(
       const response = await authService.signIn(credentials.email, credentials.password);
       return response;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Login failed');
+      const userFriendlyError = ErrorHandler.handleAuthError(error);
+      return rejectWithValue(userFriendlyError);
     }
   }
 );
@@ -22,7 +24,8 @@ export const registerUser = createAsyncThunk(
       const response = await authService.signUp(userData.email, userData.password, userData.name);
       return response;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Registration failed');
+      const userFriendlyError = ErrorHandler.handleAuthError(error);
+      return rejectWithValue(userFriendlyError);
     }
   }
 );
@@ -55,7 +58,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
   token: null,
-  isLoading: false,
+  isLoading: true, // Start with loading true to check auth state
   error: null,
 };
 
@@ -69,12 +72,17 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
+      state.isLoading = false; // Stop loading when user is set
     },
     clearAuth: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
       state.error = null;
+      state.isLoading = false; // Stop loading when auth is cleared
+    },
+    setAuthLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -93,7 +101,8 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        const error = action.payload as UserFriendlyError;
+        state.error = error.message;
       })
       // Register
       .addCase(registerUser.pending, (state) => {
@@ -109,7 +118,8 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        const error = action.payload as UserFriendlyError;
+        state.error = error.message;
       })
       // Logout
       .addCase(logoutUser.fulfilled, (state) => {
@@ -126,5 +136,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setUser, clearAuth } = authSlice.actions;
+export const { clearError, setUser, clearAuth, setAuthLoading } = authSlice.actions;
 export default authSlice.reducer;

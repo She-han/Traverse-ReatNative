@@ -12,6 +12,7 @@ import { doc, setDoc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from './firebase';
 import { User, UserPreferences } from '../types';
+import { ErrorHandler } from '../utils/errorHandler';
 
 // Helper function to convert Firebase timestamps to Date objects
 const convertFirestoreTimestamps = (userData: any): User => {
@@ -60,7 +61,8 @@ export class AuthService {
 
       return { user: userData, token };
     } catch (error: any) {
-      throw new Error(error.message);
+      const userFriendlyError = ErrorHandler.handleAuthError(error);
+      throw new Error(userFriendlyError.message);
     }
   }
 
@@ -110,7 +112,8 @@ export class AuthService {
 
       return { user: userData, token };
     } catch (error: any) {
-      throw new Error(error.message);
+      const userFriendlyError = ErrorHandler.handleAuthError(error);
+      throw new Error(userFriendlyError.message);
     }
   }
 
@@ -120,7 +123,8 @@ export class AuthService {
       await signOut(auth);
       await AsyncStorage.removeItem('userToken');
     } catch (error: any) {
-      throw new Error(error.message);
+      const userFriendlyError = ErrorHandler.handleAuthError(error);
+      throw new Error(userFriendlyError.message);
     }
   }
 
@@ -129,7 +133,8 @@ export class AuthService {
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (error: any) {
-      throw new Error(error.message);
+      const userFriendlyError = ErrorHandler.handleAuthError(error);
+      throw new Error(userFriendlyError.message);
     }
   }
 
@@ -177,6 +182,37 @@ export class AuthService {
   // Get current user
   static getCurrentUser(): FirebaseUser | null {
     return auth.currentUser;
+  }
+
+  // Check if user is already authenticated (for app initialization)
+  static async checkAuthState(): Promise<{ user: User; token: string } | null> {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        // No Firebase user, clean up any stale tokens
+        await AsyncStorage.removeItem('userToken');
+        return null;
+      }
+
+      // Get fresh token
+      const token = await getIdToken(currentUser);
+      
+      // Get user data
+      const userData = await this.getUserData(currentUser.uid);
+      if (!userData) {
+        return null;
+      }
+
+      // Update stored token
+      await AsyncStorage.setItem('userToken', token);
+      
+      return { user: userData, token };
+    } catch (error) {
+      console.error('Error checking auth state:', error);
+      // Clean up on error
+      await AsyncStorage.removeItem('userToken');
+      return null;
+    }
   }
 
   // Get user data from Firestore

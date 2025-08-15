@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { loginUser, registerUser, clearError } from '../../store/slices/authSlice';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { COLORS, SIZES } from '../../constants';
 
 const LoginScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector(state => state.auth);
+  const { handleValidationError, showSuccess, handleError } = useErrorHandler();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,24 +28,26 @@ const LoginScreen: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
 
   const handleAuth = async () => {
-    if (!email || !password || (isSignUp && !name)) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
+    // Clear any existing errors
     if (error) {
       dispatch(clearError());
     }
 
+    // Validate fields
+    if (handleValidationError('email', email)) return;
+    if (handleValidationError('password', password)) return;
+    if (isSignUp && handleValidationError('name', name)) return;
+
     try {
       if (isSignUp) {
         await dispatch(registerUser({ email, password, name })).unwrap();
-        Alert.alert('Success', 'Account created successfully!');
+        showSuccess('Account Created!', 'Welcome to Traverse! You can now track your buses.');
       } else {
         await dispatch(loginUser({ email, password })).unwrap();
+        showSuccess('Welcome Back!', 'You\'re now signed in to Traverse.');
       }
     } catch (error: any) {
-      Alert.alert('Error', error);
+      handleError(error);
     }
   };
 
@@ -97,10 +101,6 @@ const LoginScreen: React.FC = () => {
               secureTextEntry
               autoComplete="password"
             />
-
-            {error && (
-              <Text style={styles.errorText}>{error}</Text>
-            )}
 
             <TouchableOpacity
               style={[styles.button, isLoading && styles.buttonDisabled]}

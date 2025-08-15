@@ -21,7 +21,7 @@ const WelcomeScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="bus" size={60} color="#2ECC71" />
+            <Ionicons name="bus" size={48} color="#2ECC71" />
           </View>
           <Text style={styles.appName}>Traverse</Text>
           <Text style={styles.tagline}>Never miss the bus again</Text>
