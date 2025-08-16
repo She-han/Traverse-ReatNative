@@ -20,6 +20,7 @@ const convertFirestoreTimestamps = (userData: any): User => {
     ...userData,
     createdAt: userData.createdAt?.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt),
     lastLoginAt: userData.lastLoginAt?.toDate ? userData.lastLoginAt.toDate() : new Date(userData.lastLoginAt),
+    updatedAt: userData.updatedAt?.toDate ? userData.updatedAt.toDate() : (userData.updatedAt ? new Date(userData.updatedAt) : new Date()),
   };
 };
 

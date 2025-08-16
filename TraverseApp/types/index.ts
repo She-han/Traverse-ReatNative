@@ -10,6 +10,7 @@ export interface User {
   profile?: UserProfile;
   createdAt: Date;
   lastLoginAt: Date;
+  updatedAt?: Date; // Optional since not all users may have this field
 }
 
 export interface UserProfile {

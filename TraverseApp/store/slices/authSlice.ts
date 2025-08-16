@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User } from '../../types';
 import { authService } from '../../services/authService';
 import { ErrorHandler, UserFriendlyError } from '../../utils/errorHandler';
+import { serializeUserData } from '../../utils/serializeUser';
 
 // Async thunks
 export const loginUser = createAsyncThunk(
@@ -9,7 +10,10 @@ export const loginUser = createAsyncThunk(
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const response = await authService.signIn(credentials.email, credentials.password);
-      return response;
+      return {
+        user: serializeUserData(response.user),
+        token: response.token
+      };
     } catch (error) {
       const userFriendlyError = ErrorHandler.handleAuthError(error);
       return rejectWithValue(userFriendlyError);
@@ -22,7 +26,10 @@ export const registerUser = createAsyncThunk(
   async (userData: { email: string; password: string; name: string }, { rejectWithValue }) => {
     try {
       const response = await authService.signUp(userData.email, userData.password, userData.name);
-      return response;
+      return {
+        user: serializeUserData(response.user),
+        token: response.token
+      };
     } catch (error) {
       const userFriendlyError = ErrorHandler.handleAuthError(error);
       return rejectWithValue(userFriendlyError);
@@ -47,7 +54,10 @@ export const refreshToken = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await authService.refreshToken();
-      return response;
+      return {
+        user: serializeUserData(response.user),
+        token: response.token
+      };
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Token refresh failed');
     }
@@ -70,7 +80,7 @@ const authSlice = createSlice({
       state.error = null;
     },
     setUser: (state, action: PayloadAction<User>) => {
-      state.user = action.payload;
+      state.user = serializeUserData(action.payload);
       state.isAuthenticated = true;
       state.isLoading = false; // Stop loading when user is set
     },
