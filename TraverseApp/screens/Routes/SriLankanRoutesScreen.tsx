@@ -27,7 +27,7 @@ const SriLankanRoutesScreen: React.FC = () => {
   const [favoriteRoutes, setFavoriteRoutes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'favorites' | 'colombo' | 'kandy'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'favorites'>('all');
 
   useEffect(() => {
     loadRoutes();
@@ -93,18 +93,6 @@ const SriLankanRoutesScreen: React.FC = () => {
     switch (selectedFilter) {
       case 'favorites':
         filtered = filtered.filter(route => favoriteRoutes.includes(route.id));
-        break;
-      case 'colombo':
-        filtered = filtered.filter(route => 
-          route.start.toLowerCase().includes('colombo') || 
-          route.destination.toLowerCase().includes('colombo')
-        );
-        break;
-      case 'kandy':
-        filtered = filtered.filter(route => 
-          route.start.toLowerCase().includes('kandy') || 
-          route.destination.toLowerCase().includes('kandy')
-        );
         break;
       case 'all':
       default:
@@ -302,22 +290,6 @@ const SriLankanRoutesScreen: React.FC = () => {
           label="Favorites" 
           value="favorites" 
           count={favoriteRoutes.length} 
-        />
-        <FilterButton 
-          label="Colombo" 
-          value="colombo" 
-          count={routes.filter(r => 
-            r.start.toLowerCase().includes('colombo') || 
-            r.destination.toLowerCase().includes('colombo')
-          ).length} 
-        />
-        <FilterButton 
-          label="Kandy" 
-          value="kandy" 
-          count={routes.filter(r => 
-            r.start.toLowerCase().includes('kandy') || 
-            r.destination.toLowerCase().includes('kandy')
-          ).length} 
         />
       </View>
 

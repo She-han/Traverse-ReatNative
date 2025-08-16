@@ -1,34 +1,57 @@
-import { sriLankanBusRouteService } from '../services/sriLankanBusRouteService';
+import { sriLankanBusRouteService, SriLankanBusRoute } from '../services/sriLankanBusRouteService';
 
-// Test the Sri Lankan bus route service
+// Test the Sri Lankan bus route service with Traccar integration
 export const testSriLankanRoutes = async () => {
   try {
     console.log('Testing Sri Lankan Bus Route Service...');
     
-    // Test 1: Get all routes from Firebase
-    const allRoutes = await sriLankanBusRouteService.getAllSriLankanRoutes();
-    console.log(`✅ Routes loaded from Firebase: ${allRoutes.length} routes`);
-    if (allRoutes.length > 0) {
-      console.log('First route:', allRoutes[0]);
+    // Test 1: Get routes from Firebase
+    const routes = await sriLankanBusRouteService.getAllSriLankanRoutes();
+    console.log(`✅ Routes loaded from Firebase: ${routes.length} routes`);
+    
+    if (routes.length > 0) {
+      console.log('First route:', routes[0]);
     }
     
     // Test 2: Search functionality
     const searchResults = await sriLankanBusRouteService.searchRoutes('colombo');
     console.log(`✅ Search 'colombo' found: ${searchResults.length} routes`);
     
-    // Test 3: Routes by start location
-    const colomboRoutes = await sriLankanBusRouteService.getRoutesByStartLocation('Colombo');
+    // Test 3: Location-based filtering
+    const colomboRoutes = await sriLankanBusRouteService.getRoutesByStartLocation('colombo');
     console.log(`✅ Routes starting from Colombo: ${colomboRoutes.length}`);
     
-    // Test 4: Routes by destination
-    const kandyDestination = await sriLankanBusRouteService.getRoutesByDestination('Kandy');
-    console.log(`✅ Routes going to Kandy: ${kandyDestination.length}`);
+    const kandyRoutes = await sriLankanBusRouteService.getRoutesByDestination('kandy');
+    console.log(`✅ Routes going to Kandy: ${kandyRoutes.length}`);
+    
+    // Test 4: Specific route lookup (for Traccar integration)
+    const route138 = await sriLankanBusRouteService.getRouteByNumber('138');
+    console.log(`✅ Route 138 found:`, route138 ? `${route138.start} - ${route138.destination}` : 'Not found');
+    
+    // Test 5: Get statistics
+    const stats = await sriLankanBusRouteService.getRouteStatistics();
+    console.log(`✅ Statistics:`, {
+      totalRoutes: stats.totalRoutes,
+      activeRoutes: stats.activeRoutes,
+      totalBuses: stats.totalBuses,
+      activeBuses: stats.activeBuses
+    });
     
     console.log('✅ All tests passed! Sri Lankan Bus Route Service is working correctly.');
-    return { success: true, routeCount: allRoutes.length };
+    
+    return {
+      success: true,
+      routeCount: routes.length,
+      searchResults: searchResults.length,
+      stats
+    };
   } catch (error) {
     console.error('❌ Test failed:', error);
-    return { success: false, error };
+    return {
+      success: false,
+      error: error,
+      routeCount: 0
+    };
   }
 };
 

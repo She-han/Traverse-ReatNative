@@ -17,10 +17,12 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
       id: bus.id,
       lat: bus.latitude,
       lng: bus.longitude,
-      route: bus.routeNumber,
+      routeNumber: bus.routeNumber,
+      routeName: bus.routeInfo?.routeName || `Route ${bus.routeNumber}`,
+      routeDetails: bus.routeInfo ? `${bus.routeInfo.startLocation} → ${bus.routeInfo.endLocation}` : '',
       plate: bus.busInfo.plateNumber,
       speed: bus.speed,
-      status: bus.status,
+      status: 'online', // Set all buses with location data as online
       driver: bus.driver?.name || 'Unknown',
       lastUpdate: bus.lastUpdate.toLocaleTimeString()
     })));
@@ -53,7 +55,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
             color: white;
             font-weight: bold;
         }
-        .status-active { background-color: #4CAF50; }
+        .status-online { background-color: #4CAF50; }
         .status-inactive { background-color: #FF9800; }
         .status-maintenance { background-color: #F44336; }
         .status-offline { background-color: #9E9E9E; }
@@ -94,7 +96,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
     
     <div class="legend">
         <div class="legend-title">Bus Status</div>
-        <div class="legend-item"><div class="legend-dot status-active"></div>Active</div>
+        <div class="legend-item"><div class="legend-dot status-online"></div>Online</div>
         <div class="legend-item"><div class="legend-dot status-inactive"></div>Inactive</div>
         <div class="legend-item"><div class="legend-dot status-maintenance"></div>Maintenance</div>
         <div class="legend-item"><div class="legend-dot status-offline"></div>Offline</div>
@@ -123,7 +125,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
             const statusClass = 'status-' + bus.status;
             
             const icon = L.divIcon({
-                html: \`<div class="bus-marker \${statusClass}">\${bus.route}</div>\`,
+                html: \`<div class="bus-marker \${statusClass}">\${bus.routeNumber}</div>\`,
                 className: 'custom-div-icon',
                 iconSize: [30, 30],
                 iconAnchor: [15, 15]
@@ -134,14 +136,12 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
                     <div style="min-width: 200px;">
                         <h3 style="margin: 0 0 10px 0; color: #1976d2;">🚌 \${bus.plate}</h3>
                         <div style="font-size: 14px; line-height: 1.5;">
-                            <div><strong>Route Number:</strong> \${bus.route}</div>
+                            <div><strong>Route:</strong> \${bus.routeName}</div>
+                            \${bus.routeDetails ? \`<div style="color: #666; margin-bottom: 5px;">\${bus.routeDetails}</div>\` : ''}
                             <div><strong>Speed:</strong> \${bus.speed.toFixed(1)} km/h</div>
                             <div><strong>Status:</strong> <span style="color: \${getStatusColor(bus.status)}; font-weight: bold;">\${bus.status.toUpperCase()}</span></div>
                             <div><strong>Driver:</strong> \${bus.driver}</div>
                             <div><strong>Last Update:</strong> \${bus.lastUpdate}</div>
-                            <div style="margin-top: 5px; font-size: 12px; color: #666;">
-                                📍 \${bus.lat.toFixed(6)}, \${bus.lng.toFixed(6)}
-                            </div>
                         </div>
                     </div>
                 \`)
@@ -164,8 +164,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
                     <div style="min-width: 150px;">
                         <h3 style="margin: 0 0 10px 0; color: #6366f1;">📍 Your Location</h3>
                         <div style="font-size: 14px; line-height: 1.5;">
-                            <div><strong>Latitude:</strong> \${userLocation.lat.toFixed(6)}</div>
-                            <div><strong>Longitude:</strong> \${userLocation.lng.toFixed(6)}</div>
+                            <div>You are currently here</div>
                         </div>
                     </div>
                 \`)
@@ -188,6 +187,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
         
         function getStatusColor(status) {
             switch(status) {
+                case 'online':
                 case 'active': return '#4CAF50';
                 case 'inactive': return '#FF9800';
                 case 'maintenance': return '#F44336';

@@ -1,5 +1,20 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, collection, onSnapshot, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
+import { sriLankanBusRouteService, SriLankanBusRoute } from './sriLankanBusRouteService';
+
+// Import the class for static methods
+class SriLankanBusRouteService {
+  static extractRouteFromIdentifier(identifier: string): string | null {
+    try {
+      // Match pattern: routeNo-busId
+      const match = identifier.match(/^([^-]+)-\d+$/);
+      return match ? match[1] : null;
+    } catch (error) {
+      console.error('Error extracting route from identifier:', error);
+      return null;
+    }
+  }
+}
 
 // Types for Traccar data
 export interface TraccarDevice {
@@ -66,6 +81,19 @@ export interface BusLocation {
     distance: number;
     totalDistance: number;
     accuracy: number;
+  };
+  // Added Sri Lankan route integration
+  routeInfo?: {
+    routeName: string;
+    startLocation: string;
+    endLocation: string;
+    distance?: number;
+    estimatedDuration?: number;
+    fare?: number;
+    operatingHours?: {
+      start: string;
+      end: string;
+    };
   };
 }
 
@@ -252,20 +280,40 @@ class TraccarService {
     }
   }
 
-  // Convert Traccar data to app format
-  private convertToBusLocation(device: TraccarDevice, position: TraccarPosition): BusLocation {
-    // Extract route number from device name (e.g., "Bus_138_001" -> "138")
-    const routeMatch = device.name.match(/(?:Bus_|Route_)?(\d+)/i);
-    const routeNumber = routeMatch ? routeMatch[1] : 'Unknown';
+  // Convert Traccar data to app format with Sri Lankan route integration
+  private async convertToBusLocation(device: TraccarDevice, position: TraccarPosition): Promise<BusLocation> {
+    // Extract route number from device name/uniqueId (format: "routeNo-busId" e.g., "138-001")
+    const routeNumber = SriLankanBusRouteService.extractRouteFromIdentifier(device.uniqueId) || 
+                       SriLankanBusRouteService.extractRouteFromIdentifier(device.name) ||
+                       this.extractRouteFromLegacyFormat(device.name);
     
-    // Extract bus number
-    const busMatch = device.name.match(/(\d+)$/);
-    const busNumber = busMatch ? busMatch[1] : device.uniqueId;
+    // Extract bus number (the part after the dash)
+    const busIdMatch = device.uniqueId.match(/-(\d+)$/) || device.name.match(/-(\d+)$/);
+    const busNumber = busIdMatch ? busIdMatch[1] : device.uniqueId;
+
+    // Try to get actual route data from Sri Lankan routes
+    let routeInfo: SriLankanBusRoute | null = null;
+    let routeName = `Route ${routeNumber}`;
+    let startLocation = 'Unknown';
+    let endLocation = 'Unknown';
+
+    try {
+      if (routeNumber) {
+        routeInfo = await sriLankanBusRouteService.getRouteByNumber(routeNumber);
+        if (routeInfo) {
+          routeName = routeInfo.name || `${routeInfo.start} - ${routeInfo.destination}`;
+          startLocation = routeInfo.start;
+          endLocation = routeInfo.destination;
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ Could not fetch route info for ${routeNumber}:`, error);
+    }
 
     const busLocation: BusLocation = {
       id: device.uniqueId,
       deviceId: device.id,
-      routeNumber,
+      routeNumber: routeNumber || 'Unknown',
       busNumber,
       latitude: position.latitude,
       longitude: position.longitude,
@@ -287,6 +335,16 @@ class TraccarService {
         totalDistance: position.attributes.totalDistance || 0,
         accuracy: position.accuracy || 0,
       },
+      // Add route info from Sri Lankan routes
+      routeInfo: routeInfo ? {
+        routeName,
+        startLocation,
+        endLocation,
+        distance: routeInfo.distance,
+        estimatedDuration: routeInfo.estimatedDuration,
+        fare: routeInfo.fare,
+        operatingHours: routeInfo.operatingHours
+      } : undefined
     };
 
     // Only add driver if contact exists (Firebase doesn't allow undefined)
@@ -298,6 +356,12 @@ class TraccarService {
     }
 
     return busLocation;
+  }
+
+  // Legacy format support (e.g., "Bus_138_001" -> "138")
+  private extractRouteFromLegacyFormat(deviceName: string): string {
+    const routeMatch = deviceName.match(/(?:Bus_|Route_)?(\d+)/i);
+    return routeMatch ? routeMatch[1] : 'Unknown';
   }
 
   // Determine bus status based on device and position data
@@ -376,7 +440,7 @@ class TraccarService {
       for (const device of devices) {
         const position = positionMap.get(device.id);
         if (position) {
-          const busLocation = this.convertToBusLocation(device, position);
+          const busLocation = await this.convertToBusLocation(device, position);
           busLocations.push(busLocation);
 
           // Save individual bus location to Firebase
@@ -401,19 +465,28 @@ class TraccarService {
         }
       }
 
-      // Update route statistics
+      // Update Sri Lankan route statistics
       for (const [routeNumber, data] of routeStats) {
         const activeBuses = data.buses.filter(bus => bus.status === 'active').length;
-        const averageSpeed = data.buses.length > 0 ? data.totalSpeed / data.buses.length : 0;
+        const totalBuses = data.buses.length;
+        
+        try {
+          // Update the Sri Lankan routes collection with real bus counts
+          await sriLankanBusRouteService.updateRouteActiveBuses(routeNumber, activeBuses, totalBuses);
+        } catch (error) {
+          console.warn(`⚠️ Could not update Sri Lankan route ${routeNumber}:`, error);
+        }
 
+        // Also update the legacy routes collection for backward compatibility
+        const averageSpeed = data.buses.length > 0 ? data.totalSpeed / data.buses.length : 0;
         const routeData: RouteData = {
           id: routeNumber,
           routeNumber,
-          routeName: `Route ${routeNumber}`, // You can enhance this with actual route names
-          startLocation: 'Unknown', // You can enhance this with actual route data
-          endLocation: 'Unknown',
+          routeName: data.buses[0]?.routeInfo?.routeName || `Route ${routeNumber}`,
+          startLocation: data.buses[0]?.routeInfo?.startLocation || 'Unknown',
+          endLocation: data.buses[0]?.routeInfo?.endLocation || 'Unknown',
           activeBuses,
-          totalBuses: data.buses.length,
+          totalBuses,
           averageSpeed,
           lastUpdate: new Date(),
         };
@@ -471,8 +544,8 @@ class TraccarService {
     
     const q = query(
       collection(this.db, 'busLocations'),
-      where('routeNumber', '==', routeNumber),
-      orderBy('lastUpdate', 'desc')
+      where('routeNumber', '==', routeNumber)
+      // Removed orderBy to avoid composite index requirement
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -485,6 +558,9 @@ class TraccarService {
           lastUpdate: new Date(data.lastUpdate),
         } as BusLocation);
       });
+      
+      // Sort by lastUpdate on client side instead of server side
+      buses.sort((a, b) => b.lastUpdate.getTime() - a.lastUpdate.getTime());
       
       console.log(`📍 Route ${routeNumber}: ${buses.length} buses updated`);
       callback(buses);

@@ -130,61 +130,64 @@ const WebMapView: React.FC<WebMapViewProps> = ({ buses, selectedBus, onBusSelect
                   📍 Your Location
                 </h3>
                 <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                  <div><strong>Latitude:</strong> {userLocation.latitude.toFixed(6)}</div>
-                  <div><strong>Longitude:</strong> {userLocation.longitude.toFixed(6)}</div>
+                  Current location
                 </div>
               </div>
             </Popup>
           </Marker>
         )}
         
-        {buses.map((bus) => (
-          <Marker
-            key={bus.id}
-            position={[bus.latitude, bus.longitude]}
-            icon={createBusIcon(bus.status)}
-            eventHandlers={{
-              click: () => onBusSelect?.(bus),
-            }}
-          >
-            <Popup>
-              <div style={{ minWidth: '200px' }}>
-                <h3 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
-                  🚌 {bus.busInfo.plateNumber}
-                </h3>
-                <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                  <div><strong>Route:</strong> {bus.routeNumber}</div>
-                  <div><strong>Speed:</strong> {bus.speed.toFixed(1)} km/h</div>
-                  <div><strong>Status:</strong> 
-                    <span style={{ 
-                      color: bus.status === 'active' ? '#4CAF50' : 
-                             bus.status === 'inactive' ? '#FF9800' : 
-                             bus.status === 'maintenance' ? '#F44336' : '#9E9E9E',
-                      fontWeight: 'bold',
-                      marginLeft: '5px'
-                    }}>
-                      {bus.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <div><strong>Last Update:</strong> {bus.lastUpdate.toLocaleTimeString()}</div>
-                  {bus.driver && (
-                    <>
-                      <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '5px' }}>
-                        <strong>Driver:</strong> {bus.driver.name}
-                      </div>
-                      {bus.driver.phone && (
-                        <div><strong>Phone:</strong> {bus.driver.phone}</div>
-                      )}
-                    </>
-                  )}
-                  <div style={{ marginTop: '5px', fontSize: '12px', color: '#666' }}>
-                    📍 {bus.latitude.toFixed(6)}, {bus.longitude.toFixed(6)}
+        {buses.map((bus) => {
+          // Enrich bus data with route information
+          const enrichedBus = {
+            ...bus,
+            routeName: bus.routeInfo?.routeName || `Route ${bus.routeNumber}`,
+            status: 'online' as const // Set all buses with location data as online
+          };
+          
+          return (
+            <Marker
+              key={bus.id}
+              position={[bus.latitude, bus.longitude]}
+              icon={createBusIcon(enrichedBus.status)}
+              eventHandlers={{
+                click: () => onBusSelect?.(bus),
+              }}
+            >
+              <Popup>
+                <div style={{ minWidth: '200px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
+                    🚌 {bus.busInfo.plateNumber}
+                  </h3>
+                  <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                    <div><strong>Route:</strong> {enrichedBus.routeName}</div>
+                    <div><strong>Speed:</strong> {bus.speed.toFixed(1)} km/h</div>
+                    <div><strong>Status:</strong> 
+                      <span style={{ 
+                        color: '#4CAF50',
+                        fontWeight: 'bold',
+                        marginLeft: '5px'
+                      }}>
+                        ONLINE
+                      </span>
+                    </div>
+                    <div><strong>Last Update:</strong> {bus.lastUpdate.toLocaleTimeString()}</div>
+                    {bus.driver && (
+                      <>
+                        <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '5px' }}>
+                          <strong>Driver:</strong> {bus.driver.name}
+                        </div>
+                        {bus.driver.phone && (
+                          <div><strong>Phone:</strong> {bus.driver.phone}</div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
       
       {/* Map Legend */}
@@ -200,10 +203,7 @@ const WebMapView: React.FC<WebMapViewProps> = ({ buses, selectedBus, onBusSelect
         zIndex: 1000
       }}>
         <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Bus Status</div>
-        <div><span style={{ color: '#4CAF50' }}>●</span> Active</div>
-        <div><span style={{ color: '#FF9800' }}>●</span> Inactive</div>
-        <div><span style={{ color: '#F44336' }}>●</span> Maintenance</div>
-        <div><span style={{ color: '#9E9E9E' }}>●</span> Offline</div>
+        <div><span style={{ color: '#4CAF50' }}>●</span> Online</div>
       </div>
       
       {/* Real-time indicator */}
