@@ -11,6 +11,7 @@ import {
   ScrollView,
   SafeAreaView,
   Dimensions,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -74,7 +75,11 @@ const LoginScreen = () => {
             </TouchableOpacity>
             
             <View style={styles.logoContainer}>
-              <Ionicons name="bus" size={40} color="#2ECC71" />
+              <Image 
+                source={require('../../assets/splash-icon.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             
             <Text style={styles.title}>Welcome Back</Text>
@@ -195,14 +200,18 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   logoContainer: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 80,
     borderRadius: 35,
     backgroundColor: '#F8FFF9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
     marginTop: 40,
+  },
+  logoImage: {
+    width: 70,
+    height: 70,
   },
   title: {
     fontSize: 28,

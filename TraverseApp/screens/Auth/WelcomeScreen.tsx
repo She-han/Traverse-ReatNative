@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -21,7 +22,11 @@ const WelcomeScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="bus" size={48} color="#2ECC71" />
+            <Image 
+              source={require('../../assets/splash-icon.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.appName}>Traverse</Text>
           <Text style={styles.tagline}>Never miss the bus again</Text>
@@ -96,6 +101,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   appName: {
     fontSize: 36,

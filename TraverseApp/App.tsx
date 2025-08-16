@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Platform, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
@@ -151,7 +151,11 @@ function AppNavigation() {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.logoContainer}>
-          <Ionicons name="bus" size={60} color="#2ECC71" />
+          <Image 
+            source={require('./assets/splash-icon.png')} 
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.appName}>Traverse</Text>
         </View>
         <View style={styles.loadingContent}>
@@ -191,6 +195,10 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
   },
   appName: {
     fontSize: 32,

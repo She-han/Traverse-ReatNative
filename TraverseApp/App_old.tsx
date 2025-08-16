@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from './store';
@@ -67,7 +67,11 @@ function AppNavigation() {
     // Loading screen
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="bus" size={60} color="#2ECC71" />
+        <Image 
+          source={require('./assets/splash-icon.png')} 
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <Text style={styles.loadingText}>Traverse</Text>
       </View>
     );
@@ -200,7 +204,11 @@ function App() {
     // You can add a loading screen here
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="bus" size={60} color="#2ECC71" />
+        <Image 
+          source={require('./assets/splash-icon.png')} 
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <Text style={styles.loadingText}>Traverse</Text>
       </View>
     );
