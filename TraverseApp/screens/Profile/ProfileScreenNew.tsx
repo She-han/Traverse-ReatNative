@@ -16,7 +16,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector, useAppDispatch } from '../../store';
 import { logoutUser } from '../../store/slices/authSlice';
-import { routeService } from '../../services/routeService';
+import { userService } from '../../services/userService';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface UserStats {
   totalTrips: number;
@@ -49,18 +50,27 @@ const ProfileScreen: React.FC = () => {
     loadUserData();
   }, []);
 
+  // Refresh data when screen comes into focus (e.g., when returning from routes screen)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?.id) {
+        loadUserData();
+      }
+    }, [user?.id])
+  );
+
   const loadUserData = async () => {
     if (!user?.id) return;
     
     try {
       setLoading(true);
-      const userData = await routeService.getUserRouteData(user.id);
+      const userData = await userService.getUserProfile(user.id);
       if (userData) {
         setUserStats({
           totalTrips: userData.travelHistory?.length || 0,
           favoriteRoutes: userData.favoriteRoutes?.length || 0,
-          pointsEarned: userData.travelHistory?.reduce((sum, trip) => sum + trip.fare, 0) || 0,
-          monthlyTrips: userData.travelHistory?.filter(trip => {
+          pointsEarned: userData.travelHistory?.reduce((sum: number, trip: any) => sum + (trip.fare || 0), 0) || 0,
+          monthlyTrips: userData.travelHistory?.filter((trip: any) => {
             const tripDate = new Date(trip.date);
             const now = new Date();
             return tripDate.getMonth() === now.getMonth() && 
@@ -69,7 +79,7 @@ const ProfileScreen: React.FC = () => {
         });
         setPreferences(prev => ({
           ...prev,
-          notifications: userData.preferences?.notifications ?? true
+          ...userData.preferences
         }));
       }
     } catch (error) {
@@ -106,7 +116,7 @@ const ProfileScreen: React.FC = () => {
     try {
       const newPreferences = { ...preferences, [key]: value };
       setPreferences(newPreferences);
-      await routeService.updateUserPreferences(user.id, { [key]: value });
+      await userService.updatePreferences(user.id, { [key]: value });
     } catch (error) {
       console.error('Error updating preferences:', error);
       Alert.alert('Error', 'Failed to update preferences.');
@@ -276,7 +286,7 @@ const ProfileScreen: React.FC = () => {
               <Text style={styles.userEmail}>{user?.email || 'guest@traverse.com'}</Text>
               <View style={styles.userBadge}>
                 <Ionicons name="star" size={12} color="#f59e0b" />
-                <Text style={styles.userBadgeText}>Regular Traveler</Text>
+                <Text style={styles.userBadgeText}>Regar Traveler</Text>
               </View>
             </View>
             <TouchableOpacity 
@@ -394,12 +404,17 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   header: {
-    backgroundColor: '#6366f1',
-    paddingTop: 10,
-    paddingBottom: 24,
+    backgroundColor: '#EDFCFD',
+    paddingTop: 8,
+    paddingBottom: 12,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+        shadowColor: '#64748b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   profileSection: {
     flexDirection: 'row',
@@ -412,16 +427,16 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(61, 149, 250, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(90, 77, 240, 0.2)',
   },
   avatarText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#fff',
+    color: '#0074D9',
   },
   userInfo: {
     flex: 1,
@@ -429,12 +444,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#fff',
+    color: '#0074D9',
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#0074D9',
     marginBottom: 8,
   },
   userBadge: {

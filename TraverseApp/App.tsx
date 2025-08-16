@@ -23,7 +23,7 @@ import LoginScreen from './screens/Auth/LoginScreenNew';
 import RegisterScreen from './screens/Auth/RegisterScreen';
 import MapScreen from './screens/Map/MapScreen';
 import SriLankanRoutesScreen from './screens/Routes/SriLankanRoutesScreen';
-import ProfileScreen from './screens/Profile/ProfileScreen';
+import ProfileScreen from './screens/Profile/ProfileScreenNew';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

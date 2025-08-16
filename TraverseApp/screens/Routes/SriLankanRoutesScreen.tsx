@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '../../store';
 import { sriLankanBusRouteService, SriLankanBusRoute } from '../../services/sriLankanBusRouteService';
+import { userService } from '../../services/userService';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { testSriLankanRoutes, testFirebaseIntegration } from '../../utils/testRoutes';
 
@@ -31,6 +32,7 @@ const SriLankanRoutesScreen: React.FC = () => {
 
   useEffect(() => {
     loadRoutes();
+    loadFavorites();
   }, []);
 
   useEffect(() => {
@@ -69,9 +71,24 @@ const SriLankanRoutesScreen: React.FC = () => {
     }
   };
 
+  const loadFavorites = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const favorites = await userService.getFavoriteRoutes(user.id);
+      setFavoriteRoutes(favorites);
+      console.log(`❤️ Loaded ${favorites.length} favorite routes for user`);
+    } catch (error) {
+      console.error('❌ Error loading favorite routes:', error);
+      // Don't show error to user for favorites - just continue with empty array
+      setFavoriteRoutes([]);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadRoutes();
+    await loadFavorites();
     setRefreshing(false);
   };
 
@@ -104,23 +121,27 @@ const SriLankanRoutesScreen: React.FC = () => {
   };
 
   const toggleFavorite = async (routeId: string) => {
+    if (!user?.id) {
+      showInfo('Please log in', 'You need to be logged in to save favorite routes');
+      return;
+    }
+
     try {
       const isFavorite = favoriteRoutes.includes(routeId);
-      let newFavorites: string[];
       
-      if (isFavorite) {
-        newFavorites = favoriteRoutes.filter(id => id !== routeId);
-        showInfo('Removed from favorites', '');
+      // Update the database first
+      const newIsFavorite = await userService.toggleFavoriteRoute(user.id, routeId);
+      
+      // Update local state based on database result
+      if (newIsFavorite) {
+        setFavoriteRoutes(prev => [...prev, routeId]);
+        showSuccess('Added to favorites', '');
       } else {
-        newFavorites = [...favoriteRoutes, routeId];
-        showInfo('Added to favorites', '');
+        setFavoriteRoutes(prev => prev.filter(id => id !== routeId));
+        showSuccess('Removed from favorites', '');
       }
-      
-      setFavoriteRoutes(newFavorites);
-      
-      // TODO: Save to user preferences in Firebase
-      // await userService.updateFavoriteRoutes(user?.id, newFavorites);
     } catch (error) {
+      console.error('❌ Error toggling favorite:', error);
       handleError(error);
     }
   };
@@ -256,15 +277,7 @@ const SriLankanRoutesScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Sri Lankan Bus Routes</Text>
-          <Text style={styles.subtitle}>{routes.length} routes available</Text>
-        </View>
-        <TouchableOpacity onPress={runTests} style={styles.testButton}>
-          <Ionicons name="flask-outline" size={20} color="#2563EB" />
-        </TouchableOpacity>
-      </View>
+      
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
