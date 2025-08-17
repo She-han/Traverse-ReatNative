@@ -10,6 +10,7 @@ import LoginScreen from '../screens/Auth/LoginScreen';
 import MapScreen from '../screens/Map/MapScreen';
 import SriLankanRoutesScreen from '../screens/Routes/SriLankanRoutesScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
+import { serializeUserData } from '../utils/serializeUser';
 
 import { COLORS } from '../constants';
 import { RootStackParamList, MainTabParamList } from '../types';
@@ -61,7 +62,7 @@ const AppNavigator: React.FC = () => {
         try {
           const userData = await AuthService.getUserData(firebaseUser.uid);
           if (userData) {
-            dispatch(setUser(userData));
+            dispatch(setUser(serializeUserData(userData)));
           }
         } catch (error) {
           console.log('Error fetching user data:', error);

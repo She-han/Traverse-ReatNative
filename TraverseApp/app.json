@@ -53,7 +53,8 @@
         {
           "googleMapsApiKey": "AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

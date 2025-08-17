@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { BusLocation } from '../../services/traccarService';
 
@@ -11,7 +11,7 @@ interface UniversalMapViewProps {
 }
 
 const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus, onBusSelect, userLocation }) => {
-  // Create HTML content for the map
+  // Create optimized mobile HTML content for the map
   const generateMapHTML = () => {
     const busesJson = JSON.stringify(buses.map(bus => ({
       id: bus.id,
@@ -199,13 +199,7 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
 </html>`;
   };
 
-  if (Platform.OS === 'web') {
-    // For web, render the WebMapView component directly
-    const WebMapView = require('./WebMapView').default;
-    return <WebMapView buses={buses} selectedBus={selectedBus} onBusSelect={onBusSelect} />;
-  }
-
-  // For mobile, use WebView with the same Leaflet map
+  // Mobile-optimized map using WebView
   return (
     <View style={{ flex: 1 }}>
       <WebView
@@ -219,6 +213,10 @@ const UniversalMapView: React.FC<UniversalMapViewProps> = ({ buses, selectedBus,
         bounces={false}
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
+        allowsFullscreenVideo={false}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        originWhitelist={['*']}
       />
     </View>
   );

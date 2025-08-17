@@ -11,6 +11,7 @@ import { AuthService } from './services/authService';
 import { setUser, clearAuth, setAuthLoading } from './store/slices/authSlice';
 import { setupDevData } from './utils/initializeData';
 import { ToastProvider } from './contexts/ToastContext';
+import { serializeUserData } from './utils/serializeUser';
 
 // Import Leaflet CSS for web platforms
 if (Platform.OS === 'web') {
@@ -96,7 +97,7 @@ function AppNavigation() {
         if (isMounted) {
           if (authData) {
             console.log('User already authenticated:', authData.user.email);
-            dispatch(setUser(authData.user));
+            dispatch(setUser(serializeUserData(authData.user)));
           } else {
             console.log('No authenticated user found');
             dispatch(setAuthLoading(false));
@@ -123,7 +124,7 @@ function AppNavigation() {
           const userData = await AuthService.getUserData(firebaseUser.uid);
           if (userData && isMounted) {
             console.log('Auth state changed - user signed in:', userData.email);
-            dispatch(setUser(userData));
+            dispatch(setUser(serializeUserData(userData)));
           }
         } catch (error) {
           console.error('Error getting user data:', error);
