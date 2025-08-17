@@ -39,7 +39,7 @@
 - ✅ Cleaner Firebase synchronization
 
 ### Real-Time Tracking
-- ✅ Direct connection to Traccar server (http://157.245.48.195:8082)
+- ✅ Direct connection to Traccar server (https://traverselk.duckdns.org)
 - ✅ Real-time GPS data without mock fallbacks
 - ✅ Proper error handling for connection failures
 

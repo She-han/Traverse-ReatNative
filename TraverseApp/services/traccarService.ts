@@ -124,9 +124,9 @@ class TraccarService {
     // Try HTTPS first, fallback to HTTP if needed
     const isProduction = process.env.NODE_ENV === 'production';
     this.traccarUrl = isProduction 
-      ? 'https://157.245.48.195:8083'  // HTTPS for production
-      : 'http://157.245.48.195:8082';   // HTTP for development
-    console.log('📱 Mobile-only mode: Using remote Traccar server with', isProduction ? 'HTTPS' : 'HTTP');
+      ? 'https://traverselk.duckdns.org'  // HTTPS for production
+      : 'https://traverselk.duckdns.org';   // HTTPS for development (new domain supports SSL)
+    console.log('📱 Mobile-only mode: Using remote Traccar server with', isProduction ? 'HTTPS' : 'HTTPS');
     
     this.username = 'shehangarusinghe@gmail.com'; // Default Traccar username
     this.password = 'gaasi1021'; // Default Traccar password
@@ -620,8 +620,8 @@ class TraccarService {
   // Test connection to Traccar server (mobile-optimized with fallback)
   async testConnection(): Promise<{ success: boolean; message: string; data?: any }> {
     const urlsToTry = [
-      'https://157.245.48.195:8083', // HTTPS first
-      'http://157.245.48.195:8082',  // HTTP fallback
+      'https://traverselk.duckdns.org', // HTTPS with new domain
+      'http://157.245.48.195:8082',     // HTTP fallback (legacy)
       this.traccarUrl // Current configured URL
     ];
 

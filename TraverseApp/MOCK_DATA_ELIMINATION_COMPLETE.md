@@ -56,7 +56,7 @@ LOG 📍 All buses: 1 buses updated (1 real only)
 - ✅ **Clean Database**: No fake bus locations or routes
 
 ### **Real Route 32:**
-- ✅ **1 Real Device**: From Traccar server (http://157.245.48.195:8082)
+- ✅ **1 Real Device**: From Traccar server (https://traverselk.duckdns.org)
 - ✅ **Real GPS Coordinates**: Actual bus location data
 - ✅ **Live Tracking**: Real-time position updates
 

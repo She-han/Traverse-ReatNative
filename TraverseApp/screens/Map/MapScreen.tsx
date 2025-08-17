@@ -366,8 +366,8 @@ const MapScreen: React.FC = () => {
         mapRef.current.animateToRegion({
           latitude: userCoords.latitude,
           longitude: userCoords.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
+          latitudeDelta: 0.08,  // Increased for wider view
+          longitudeDelta: 0.08, // Increased for wider view
         }, 1500);
       } else {
         console.log('⚠️ Map reference not available for centering');
@@ -403,8 +403,8 @@ const MapScreen: React.FC = () => {
       mapRef.current.animateToRegion({
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.06,  // Increased for wider view
+        longitudeDelta: 0.06, // Increased for wider view
       }, 1000);
     } else {
       console.log('⚠️ Map reference not available');
@@ -635,8 +635,8 @@ const MapScreen: React.FC = () => {
               initialRegion={{
                 latitude: userLocation?.latitude || 6.9271,
                 longitude: userLocation?.longitude || 79.8612,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
+                latitudeDelta: 0.08,  // Consistent wider view
+                longitudeDelta: 0.08, // Consistent wider view
               }}
               showsUserLocation={false}
               showsMyLocationButton={false}

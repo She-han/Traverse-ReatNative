@@ -153,8 +153,8 @@ export class LocationUtils {
       return {
         latitude: 6.9271, // Default to Colombo
         longitude: 79.8612,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.08, // Wider default view
+        longitudeDelta: 0.08, // Wider default view
       };
     }
 

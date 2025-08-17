@@ -34,7 +34,7 @@ export const MAP_SETTINGS = {
   initialRegion: {
     latitude: 6.9271, // Colombo, Sri Lanka (adjust for your city)
     longitude: 79.8612,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitudeDelta: 0.08,  // Wider view for better area coverage
+    longitudeDelta: 0.08, // Wider view for better area coverage
   },
 };

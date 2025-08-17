@@ -92,7 +92,7 @@ console.log(`${stats.activeBuses} buses active across ${stats.activeRoutes} rout
 
 ### For Drivers
 1. Install Traccar Client app on Android/iOS
-2. Configure server: `http://157.245.48.195:8082`
+2. Configure server: `https://traverselk.duckdns.org`
 3. Set device identifier: `[ROUTE_NUMBER]-[BUS_ID]` (e.g., `138-001`)
 4. Start tracking - system automatically detects your route
 
