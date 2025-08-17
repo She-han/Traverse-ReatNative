@@ -121,8 +121,12 @@ class TraccarService {
 
   constructor() {
     // Mobile-optimized Traccar server configuration
-    this.traccarUrl = 'http://157.245.48.195:8082';
-    console.log('📱 Mobile-only mode: Using remote Traccar server');
+    // Try HTTPS first, fallback to HTTP if needed
+    const isProduction = process.env.NODE_ENV === 'production';
+    this.traccarUrl = isProduction 
+      ? 'https://157.245.48.195:8083'  // HTTPS for production
+      : 'http://157.245.48.195:8082';   // HTTP for development
+    console.log('📱 Mobile-only mode: Using remote Traccar server with', isProduction ? 'HTTPS' : 'HTTP');
     
     this.username = 'shehangarusinghe@gmail.com'; // Default Traccar username
     this.password = 'gaasi1021'; // Default Traccar password
@@ -613,54 +617,56 @@ class TraccarService {
     });
   }
 
-  // Test connection to Traccar server (mobile-optimized)
+  // Test connection to Traccar server (mobile-optimized with fallback)
   async testConnection(): Promise<{ success: boolean; message: string; data?: any }> {
-    try {
-      console.log(`🧪 Testing mobile connection to ${this.traccarUrl}...`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      const response = await fetch(`${this.traccarUrl}/api/server`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-        signal: controller.signal,
-      });
+    const urlsToTry = [
+      'https://157.245.48.195:8083', // HTTPS first
+      'http://157.245.48.195:8082',  // HTTP fallback
+      this.traccarUrl // Current configured URL
+    ];
 
-      clearTimeout(timeoutId);
+    for (const testUrl of urlsToTry) {
+      try {
+        console.log(`🧪 Testing mobile connection to ${testUrl}...`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        
+        const response = await fetch(`${testUrl}/api/server`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        });
 
-      if (response.ok) {
-        const serverInfo = await response.json();
-        console.log('✅ Successfully connected to Traccar server:', serverInfo);
-        return {
-          success: true,
-          message: `Connected to Traccar server (${serverInfo.version || 'unknown version'})`,
-          data: serverInfo,
-        };
-      } else {
-        console.error('❌ Server responded with error:', response.status, response.statusText);
-        return {
-          success: false,
-          message: `Server error: ${response.status} ${response.statusText}`,
-        };
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const serverInfo = await response.json();
+          console.log('✅ Successfully connected to Traccar server:', serverInfo);
+          
+          // Update the URL to the working one
+          this.traccarUrl = testUrl;
+          
+          return {
+            success: true,
+            message: `Connected to Traccar server (${serverInfo.version || 'unknown version'}) via ${testUrl.includes('https') ? 'HTTPS' : 'HTTP'}`,
+            data: serverInfo,
+          };
+        } else {
+          console.warn(`❌ ${testUrl} responded with error:`, response.status, response.statusText);
+        }
+      } catch (error: any) {
+        console.warn(`❌ Connection to ${testUrl} failed:`, error.message);
       }
-    } catch (error: any) {
-      console.error('❌ Connection test failed:', error.message);
-      
-      if (error.name === 'AbortError') {
-        return {
-          success: false,
-          message: 'Connection timeout - server is not responding',
-        };
-      }
-
-      return {
-        success: false,
-        message: `Connection failed: ${error.message}`,
-      };
     }
+
+    // If all URLs failed
+    return {
+      success: false,
+      message: 'Connection failed: Unable to connect to Traccar server on any available endpoint. Check network connectivity and server status.',
+    };
   }
 
   // Cleanup

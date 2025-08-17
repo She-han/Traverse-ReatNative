@@ -1,11 +1,11 @@
 export const COLORS = {
-  primary: '#2E86AB',
+  primary: '#2ECC71', // Green primary color - matches original design
   secondary: '#A23B72',
   accent: '#F18F01',
   background: '#F5F5F5',
   white: '#FFFFFF',
   black: '#000000',
-  gray: '#8E8E93',
+  gray: '#A0A0A0', // Updated gray to match original design
   success: '#34C759',
   error: '#FF3B30',
   warning: '#FF9500',

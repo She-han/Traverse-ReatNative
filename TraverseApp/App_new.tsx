@@ -22,7 +22,7 @@ import LoginScreen from './screens/Auth/LoginScreenNew';
 import RegisterScreen from './screens/Auth/RegisterScreen';
 import MapScreen from './screens/Map/MapScreen';
 import RoutesScreen from './screens/Routes/RoutesScreen';
-import ProfileScreen from './screens/Profile/ProfileScreen';
+import ProfileScreen from './screens/Profile/ProfileScreenNew';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

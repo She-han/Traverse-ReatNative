@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from './firebase';
 import { User, UserPreferences } from '../types';
 import { ErrorHandler } from '../utils/errorHandler';
+import { SecureTokenStorage } from '../utils/secureTokenStorage';
 
 // Helper function to convert Firebase timestamps to Date objects
 const convertFirestoreTimestamps = (userData: any): User => {
@@ -57,8 +58,8 @@ export class AuthService {
       // Get token
       const token = await getIdToken(firebaseUser);
       
-      // Store token locally
-      await AsyncStorage.setItem('userToken', token);
+      // Store token securely
+      await SecureTokenStorage.saveAuthToken(token, firebaseUser.uid, firebaseUser.email!);
 
       return { user: userData, token };
     } catch (error: any) {
@@ -108,8 +109,8 @@ export class AuthService {
       // Get token
       const token = await getIdToken(firebaseUser);
       
-      // Store token locally
-      await AsyncStorage.setItem('userToken', token);
+      // Store token securely
+      await SecureTokenStorage.saveAuthToken(token, firebaseUser.uid, firebaseUser.email!);
 
       return { user: userData, token };
     } catch (error: any) {
@@ -122,7 +123,7 @@ export class AuthService {
   static async signOut(): Promise<void> {
     try {
       await signOut(auth);
-      await AsyncStorage.removeItem('userToken');
+      await SecureTokenStorage.clearAuthData();
     } catch (error: any) {
       const userFriendlyError = ErrorHandler.handleAuthError(error);
       throw new Error(userFriendlyError.message);
@@ -157,8 +158,8 @@ export class AuthService {
 
       const userData = convertFirestoreTimestamps(userDoc.data());
       
-      // Store token locally
-      await AsyncStorage.setItem('userToken', token);
+      // Store token securely
+      await SecureTokenStorage.saveAuthToken(token, firebaseUser.uid, firebaseUser.email!);
 
       return { user: userData, token };
     } catch (error: any) {
@@ -169,9 +170,23 @@ export class AuthService {
   // Get stored token
   static async getStoredToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem('userToken');
+      return await SecureTokenStorage.getAuthToken();
     } catch (error) {
       return null;
+    }
+  }
+
+  // Check if user has valid stored auth
+  static async hasValidStoredAuth(): Promise<boolean> {
+    try {
+      const isLoggedIn = await SecureTokenStorage.isLoggedIn();
+      if (!isLoggedIn) return false;
+      
+      const isValid = await SecureTokenStorage.validateToken();
+      return isValid;
+    } catch (error) {
+      console.error('Error checking stored auth:', error);
+      return false;
     }
   }
 
@@ -188,30 +203,39 @@ export class AuthService {
   // Check if user is already authenticated (for app initialization)
   static async checkAuthState(): Promise<{ user: User; token: string } | null> {
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        // No Firebase user, clean up any stale tokens
-        await AsyncStorage.removeItem('userToken');
+      // First check if we have valid stored auth
+      const hasValidAuth = await this.hasValidStoredAuth();
+      if (!hasValidAuth) {
+        await SecureTokenStorage.clearAuthData();
         return null;
       }
 
-      // Get fresh token
-      const token = await getIdToken(currentUser);
-      
-      // Get user data
-      const userData = await this.getUserData(currentUser.uid);
+      // Get stored user info
+      const savedUserInfo = await SecureTokenStorage.getSavedUserInfo();
+      if (!savedUserInfo) {
+        await SecureTokenStorage.clearAuthData();
+        return null;
+      }
+
+      // Get user data from Firestore
+      const userData = await this.getUserData(savedUserInfo.userId);
       if (!userData) {
+        await SecureTokenStorage.clearAuthData();
         return null;
       }
 
-      // Update stored token
-      await AsyncStorage.setItem('userToken', token);
+      // Get stored token
+      const token = await SecureTokenStorage.getAuthToken();
+      if (!token) {
+        await SecureTokenStorage.clearAuthData();
+        return null;
+      }
       
       return { user: userData, token };
     } catch (error) {
       console.error('Error checking auth state:', error);
       // Clean up on error
-      await AsyncStorage.removeItem('userToken');
+      await SecureTokenStorage.clearAuthData();
       return null;
     }
   }

@@ -9,7 +9,7 @@ import { AuthService } from '../services/authService';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import MapScreen from '../screens/Map/MapScreen';
 import SriLankanRoutesScreen from '../screens/Routes/SriLankanRoutesScreen';
-import ProfileScreen from '../screens/Profile/ProfileScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreenNew';
 import { serializeUserData } from '../utils/serializeUser';
 
 import { COLORS } from '../constants';

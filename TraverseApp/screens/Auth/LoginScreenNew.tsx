@@ -15,16 +15,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { AuthService } from '../../services/authService';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { loginUser } from '../../store/slices/authSlice';
 
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen = () => {
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const { isLoading, error } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -32,16 +34,14 @@ const LoginScreen = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
-      const result = await AuthService.signIn(email.trim(), password);
-      console.log('Login successful:', result);
-      // Navigation will happen automatically via AuthContext
+      await dispatch(loginUser({ email: email.trim(), password })).unwrap();
+      console.log('Login successful - user will be redirected automatically');
+      // Navigation will happen automatically when Redux state changes
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'An error occurred during login');
       console.error('Login error:', error);
     }
-    setIsLoading(false);
   };
 
   const handleForgotPassword = async () => {
@@ -51,6 +51,8 @@ const LoginScreen = () => {
     }
 
     try {
+      // Import AuthService locally for password reset only
+      const { AuthService } = await import('../../services/authService');
       await AuthService.resetPassword(email.trim());
       Alert.alert('Success', 'Password reset email sent! Check your inbox.');
     } catch (error: any) {
